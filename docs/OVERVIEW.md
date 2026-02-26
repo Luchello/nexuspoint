@@ -98,7 +98,7 @@ NexusPoint는 **디지털 프로필 + 물리적 명함 + AI 콘텐츠 생성**�
 | **인증** | Supabase Auth (Google · Kakao · Naver OAuth) |
 | **파일 저장** | Supabase Storage |
 | **캐싱 / Rate Limit** | Upstash Redis |
-| **AI** | Anthropic Claude (`claude-sonnet-4-20250514`) |
+| **AI** | Anthropic Claude Model |
 | **결제** | PortOne / TossPayments |
 | **이메일** | Resend |
 | **배포** | Vercel (Edge Network) |
@@ -368,3 +368,4 @@ LTV / CAC = 28.6x  ✅ (목표: 3x 이상)
 ---
 
 *최종 업데이트: 2026-02-26 | 상세 내용은 각 docs/*.md 파일을 참조하세요.*
+
