@@ -268,6 +268,54 @@ nexuspoint/
 
 ---
 
+## 보안 헤더 (Security Headers)
+
+### next.config.ts 설정
+```typescript
+const securityHeaders = [
+  { key: 'X-DNS-Prefetch-Control', value: 'on' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self'",
+      "connect-src 'self' https://api.portone.io wss:",
+    ].join('; ')
+  },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+]
+```
+
+---
+
+## GDPR 준수 - 데이터 삭제 및 내보내기
+
+### DELETE /api/account
+계정 삭제 시 9개 엔티티 캐스케이드 삭제 순서:
+1. AIConversation, AIMessage (AI 대화 이력)
+2. Review, ReviewComment (리뷰)
+3. Order, OrderItem (주문 - 법적 보존 기간 확인 후)
+4. PortfolioWork, PortfolioStat (포트폴리오)
+5. ClientProfile / FreelancerProfile (프로필)
+6. Notification, NotificationSetting (알림)
+7. Payment 기록 (법적 보존 의무 7년 - 소프트 삭제)
+8. User (소프트 삭제: deletedAt 설정)
+
+### GET /api/account/export
+GDPR Article 20 데이터 이동권:
+- JSON 형식으로 사용자 데이터 전체 내보내기
+- 7일 내 처리 보장
+- 이메일로 다운로드 링크 전송
+
+---
+
 ## 배포 설정
 
 ### Vercel 환경

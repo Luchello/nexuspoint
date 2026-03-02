@@ -531,3 +531,52 @@ vCard 파일 다운로드 (.vcf)
 | `GET /api/qr/*` | 100회/분 | IP |
 | `POST /api/payment/*` | 10회/분 | User ID |
 | 기타 인증 API | 60회/분 | User ID |
+
+---
+
+## 웹훅 보안 - PortOne HMAC 검증
+
+### 검증 플로우
+```typescript
+import crypto from 'crypto';
+
+export function verifyPortOneWebhook(
+  payload: string,
+  signature: string,
+  secret: string
+): boolean {
+  const hmac = crypto.createHmac('sha256', secret);
+  const computed = hmac.update(payload).digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(computed, 'hex'),
+    Buffer.from(signature, 'hex')
+  );
+}
+
+// API 라우트에서
+export async function POST(req: Request) {
+  const payload = await req.text();
+  const signature = req.headers.get('x-portone-signature') ?? '';
+
+  if (!verifyPortOneWebhook(payload, signature, process.env.PORTONE_WEBHOOK_SECRET!)) {
+    return Response.json({ error: 'Invalid signature' }, { status: 401 });
+  }
+  // ...
+}
+```
+
+---
+
+## 역할 기반 접근 제어 (RBAC)
+
+| 역할 | 권한 |
+|------|------|
+| `ADMIN` | 전체 접근, 사용자 관리, 분쟁 해결 |
+| `FREELANCER` | 포트폴리오 CRUD, 주문 수락/거절, 수익 조회 |
+| `CLIENT` | 주문 생성, 리뷰 작성, 결제 |
+| `GUEST` | 공개 프로필/포트폴리오 조회만 |
+
+### 미들웨어 적용
+- `/api/admin/*` → ADMIN 전용
+- `/api/orders/*` → 인증 필수 + 소유권 검증
+- `/api/profile/edit` → 본인만 수정 가능

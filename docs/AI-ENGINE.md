@@ -293,13 +293,34 @@ async function generateWithFallback(input: StoryInput): Promise<StoryOutput> {
 2. **출력 검증**: 생성된 텍스트의 길이, 형식 검증
 3. **Claude 내장 안전 장치**: Claude 자체의 안전 필터 활용
 
+### 프롬프트 인젝션 방어 (강화)
+
+**입력 검증 레이어:**
+1. **패턴 차단**: `ignore previous instructions`, `system prompt`, `jailbreak`, `[INST]`, `<|im_start|>`, `<|system|>` 등
+2. **길이 제한**: 사용자 메시지 최대 2,000자
+3. **역할 고정**: 모든 요청에 system prompt를 최우선으로 유지
+4. **출력 필터링**: 개인정보, API 키, 내부 프롬프트 패턴 감지 시 응답 차단
+5. **샌드박스 격리**: 각 대화 세션을 독립적으로 처리 (컨텍스트 오염 방지)
+
 ```typescript
-function sanitizeInput(text: string): string {
-  // 프롬프트 인젝션 방지
-  const dangerous = ['\n\nHuman:', '\n\nAssistant:', 'Ignore previous'];
-  for (const pattern of dangerous) {
-    text = text.replace(pattern, '');
+const INJECTION_PATTERNS = [
+  /ignore\s+(previous|all|above)\s+instructions/i,
+  /system\s*prompt/i,
+  /jailbreak/i,
+  /\[INST\]/i,
+  /<\|im_start\|>/i,
+  /<\|system\|>/i,
+  /you\s+are\s+now/i,
+  /pretend\s+(to\s+be|you\s+are)/i,
+  /act\s+as\s+(if\s+you\s+are|a)/i,
+  /forget\s+(your|all)\s+(instructions|rules)/i,
+];
+
+export function sanitizeUserInput(input: string): { safe: boolean; sanitized: string } {
+  const hasMaliciousPattern = INJECTION_PATTERNS.some(p => p.test(input));
+  if (hasMaliciousPattern) {
+    return { safe: false, sanitized: '' };
   }
-  return text.slice(0, 1000); // 최대 1000자 제한
+  return { safe: true, sanitized: input.slice(0, 2000) };
 }
 ```
